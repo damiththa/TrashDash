@@ -1,0 +1,13 @@
+{
+  "name": "trash-dash",
+  "version": "1.0.0",
+  "description": "TRMNL e-ink display plugin for Leominster trash day reminders",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
