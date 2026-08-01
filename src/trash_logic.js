@@ -90,41 +90,56 @@ export function getWeekStatus(tzDate) {
 const THEMES = [
   {
     headline: "BEAT THE RACCOONS!",
-    subtext: "Roll trash & recycling to the curb tonight.",
-    badge: "TRASHDASH REMINDER",
-    icon: "raccoon"
+    subtext: "They're plotting. You're faster. Bins out NOW.",
+    badge: "RACCOON ALERT"
   },
   {
     headline: "LEG DAY? NAH, BIN DAY!",
-    subtext: "Time to heavy-lift your bins to the curb!",
-    badge: "TRASHDASH ALERT",
-    icon: "dumbbell"
+    subtext: "Deadlift those bins to the curb. No excuses.",
+    badge: "GYM BRO MODE"
   },
   {
-    headline: "TRASH HERO NEEDED!",
-    subtext: "Your mission: curb the bins before morning.",
-    badge: "HERO DUTY CALLS",
-    icon: "star"
+    headline: "MISSION: CURBSIDE",
+    subtext: "T-minus tonight. Launch sequence: grab, roll, deploy.",
+    badge: "HOUSTON, WE HAVE TRASH"
   },
   {
-    headline: "MISSION: CURBSIDE!",
-    subtext: "T-minus tonight. Launch the bins to the curb.",
-    badge: "TRASHDASH COMMAND",
-    icon: "rocket"
+    headline: "YOUR BINS MISS THE CURB",
+    subtext: "It's been a whole week. Reunite them tonight.",
+    badge: "EMOTIONAL SUPPORT BINS"
   },
   {
-    headline: "THE BINS ARE CALLING!",
-    subtext: "Don't leave them hanging. Curb duty awaits.",
-    badge: "TRASHDASH REMINDER",
-    icon: "phone"
+    headline: "TRASH TALK",
+    subtext: "Your garbage called. It wants out. Tonight.",
+    badge: "INCOMING CALL"
   },
   {
-    headline: "CURB YOUR ENTHUSIASM!",
-    subtext: "...and your trash. Get those bins out tonight!",
-    badge: "TRASHDASH ALERT",
-    icon: "star"
+    headline: "CURB YOUR ENTHUSIASM",
+    subtext: "...and your trash. Larry David would approve.",
+    badge: "HBO PRESENTS"
+  },
+  {
+    headline: "WANTED: TRASH HERO",
+    subtext: "Cape optional. Bins mandatory. Curb by tonight.",
+    badge: "HERO DUTY CALLS"
+  },
+  {
+    headline: "PLOT TWIST:",
+    subtext: "Tomorrow is trash day. You're the main character.",
+    badge: "BREAKING NEWS"
+  },
+  {
+    headline: "THIS IS YOUR SIGN",
+    subtext: "The universe says: take the bins out tonight.",
+    badge: "COSMIC REMINDER"
+  },
+  {
+    headline: "DON'T BE THAT NEIGHBOR",
+    subtext: "You know the one. Bins out tonight, legend.",
+    badge: "NEIGHBORHOOD WATCH"
   }
 ];
+
 
 export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
@@ -141,8 +156,7 @@ export function processRequest(tzDate) {
         holiday_name: status.holidayName || "",
         headline: "",
         subtext: "",
-        badge: "",
-        icon: ""
+        badge: ""
       }
     };
   }
@@ -153,8 +167,7 @@ export function processRequest(tzDate) {
     theme = {
       headline: "HOLIDAY WEEK SHIFT!",
       subtext: "Collection delayed 1 day. Put bins out tonight!",
-      badge: "SCHEDULE ALERT",
-      icon: "warning"
+      badge: "⚠️ SCHEDULE ALERT"
     };
   } else {
     const themeIndex = tzDate.hour % THEMES.length;
@@ -171,8 +184,7 @@ export function processRequest(tzDate) {
       holiday_name: status.holidayName || "",
       headline: theme.headline,
       subtext: theme.subtext,
-      badge: theme.badge,
-      icon: theme.icon
+      badge: theme.badge
     }
   };
 }
