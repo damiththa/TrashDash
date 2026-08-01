@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Bin Body tilted for running motion -->
+  <path d="M5 7.5h14M7 7.5l1.2 11a2 2 0 0 0 2 1.8h5.6a2 2 0 0 0 2-1.8L19 7.5"/>
+  <!-- Lid -->
+  <path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3a1.5 1.5 0 0 1 1.5 1.5v2"/>
+  <!-- Running Legs -->
+  <path d="M9.5 20.3l-2 2.7M14.5 20.3l2.5 2.2"/>
+  <!-- Motion Lines -->
+  <path d="M2.5 10h1.5M2 13h2.5M3 16h1.5" stroke-width="2"/>
+</svg>
