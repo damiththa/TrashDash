@@ -28,17 +28,7 @@ export default {
 
     const result = processRequest(tzDate);
 
-    // CRITICAL TRMNL FIX:
-    // When NOT reminder time, return HTTP 204 (No Content).
-    // This instructs TRMNL's polling engine to ABORT rendering completely so it NEVER displays a blank screen!
-    if (!result.isReminderTime) {
-      return new Response(null, {
-        status: 204,
-        statusText: "No Content"
-      });
-    }
-
-    // Return structured JSON data for TRMNL Liquid templates when reminder is active
+    // Always return HTTP 200 OK with valid JSON for TRMNL polling health
     return new Response(JSON.stringify(result.data), {
       status: 200,
       headers: { "content-type": "application/json;charset=UTF-8" },
