@@ -1,4 +1,4 @@
-import { processRequest, getWeekStatus } from './trash_logic.js';
+import { processRequest } from './trash_logic.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -11,40 +11,25 @@ export default {
       // Simulate a normal Thursday at 3 PM for preview
       tzDate = {
         year: 2026, month: 8, day: 6,
-        hour: 15, dayOfWeek: 4, // Thursday
+        hour: 15, dayOfWeek: 4,
         jsDate: new Date(2026, 7, 6)
       };
     } else if (testMode === 'holiday') {
       // Simulate Thanksgiving Friday at 3 PM for preview
       tzDate = {
         year: 2026, month: 11, day: 27,
-        hour: 15, dayOfWeek: 5, // Friday after Thanksgiving
+        hour: 15, dayOfWeek: 5,
         jsDate: new Date(2026, 10, 27)
       };
     } else {
-      // Real production mode
       const now = new Date();
       tzDate = getTzDateParts(now, 'America/New_York');
     }
 
-    // Run the trash schedule logic
     const result = processRequest(tzDate);
 
-    // If not reminder time, return empty markup so TRMNL skips this plugin
-    if (!result.isReminderTime) {
-      return new Response(JSON.stringify({
-        status: 0,
-        markup: ""
-      }), {
-        headers: { "content-type": "application/json;charset=UTF-8" },
-      });
-    }
-
-    // Return the reminder markup
-    return new Response(JSON.stringify({
-      status: 200,
-      markup: result.markup
-    }), {
+    // Return structured JSON data for TRMNL Liquid templates
+    return new Response(JSON.stringify(result.data), {
       headers: { "content-type": "application/json;charset=UTF-8" },
     });
   },
