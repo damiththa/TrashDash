@@ -145,18 +145,23 @@ export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
   const isReminderTime = (tzDate.dayOfWeek === status.reminderDay && tzDate.hour >= 14);
 
+  // Debug info string for TRMNL "Your Variables" inspection
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const debugInfo = `${dayNames[tzDate.dayOfWeek]} ${tzDate.month}/${tzDate.day}/${tzDate.year} ${tzDate.hour}:00 ET | dow=${tzDate.dayOfWeek} | reminderDay=${status.reminderDay} | isReminderTime=${isReminderTime}`;
+
   if (!isReminderTime) {
     return {
       isReminderTime: false,
       data: {
-        is_reminder: false,
+        is_reminder: "no",
         pickup_day: status.pickupDayName,
         reminder_day: status.reminderDayName,
-        is_holiday_week: status.isHolidayWeek,
-        holiday_name: status.holidayName || "",
+        is_holiday_week: "no",
+        holiday_name: "",
         headline: "",
         subtext: "",
-        badge: ""
+        badge: "",
+        debug_info: debugInfo
       }
     };
   }
@@ -177,14 +182,16 @@ export function processRequest(tzDate) {
   return {
     isReminderTime: true,
     data: {
-      is_reminder: true,
+      is_reminder: "yes",
       pickup_day: status.pickupDayName,
       reminder_day: status.reminderDayName,
-      is_holiday_week: status.isHolidayWeek,
+      is_holiday_week: status.isHolidayWeek ? "yes" : "no",
       holiday_name: status.holidayName || "",
       headline: theme.headline,
       subtext: theme.subtext,
-      badge: theme.badge
+      badge: theme.badge,
+      debug_info: debugInfo
     }
   };
 }
+
