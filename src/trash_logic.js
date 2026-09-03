@@ -143,7 +143,7 @@ const THEMES = [
 
 export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
-  const isReminderTime = (tzDate.dayOfWeek === status.reminderDay && tzDate.hour >= 14);
+  const isReminderTime = (tzDate.dayOfWeek === status.reminderDay);
 
   // Debug info string for TRMNL "Your Variables" inspection
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
