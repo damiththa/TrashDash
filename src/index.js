@@ -14,8 +14,15 @@ export default {
         hour: 15, dayOfWeek: 4,
         jsDate: new Date(2026, 7, 6)
       };
-    } else if (testMode === 'holiday') {
-      // Simulate Thanksgiving Friday at 3 PM for preview
+    } else if (testMode === 'holiday_thu') {
+      // Simulate Thanksgiving Thursday (Delay Notice) for preview
+      tzDate = {
+        year: 2026, month: 11, day: 26,
+        hour: 15, dayOfWeek: 4,
+        jsDate: new Date(2026, 10, 26)
+      };
+    } else if (testMode === 'holiday' || testMode === 'holiday_fri') {
+      // Simulate Thanksgiving Friday (Action Night) for preview
       tzDate = {
         year: 2026, month: 11, day: 27,
         hour: 15, dayOfWeek: 5,

@@ -143,40 +143,65 @@ const THEMES = [
 
 export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
-  const isReminderTime = (tzDate.dayOfWeek === status.reminderDay);
-
-  // Debug info string for TRMNL "Your Variables" inspection
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const debugInfo = `${dayNames[tzDate.dayOfWeek]} ${tzDate.month}/${tzDate.day}/${tzDate.year} ${tzDate.hour}:00 ET | dow=${tzDate.dayOfWeek} | reminderDay=${status.reminderDay} | isReminderTime=${isReminderTime}`;
 
-  if (!isReminderTime) {
+  let isDisplayDay = false;
+  let theme = null;
+  let bannerLabel = "PICKUP DAY";
+  let bannerValue = status.pickupDayName;
+
+  if (status.isHolidayWeek) {
+    if (tzDate.dayOfWeek === 4) {
+      // Thursday of Holiday Week: Delay Notice (heads-up)
+      isDisplayDay = true;
+      theme = {
+        headline: "NO TRASH TONIGHT!",
+        subtext: `Collection delayed 1 day for ${status.holidayName}. Bins stay off the curb tonight!`,
+        badge: "⚠️ HOLIDAY DELAY"
+      };
+      bannerLabel = "BINS GO OUT FRIDAY NIGHT";
+      bannerValue = "PICKUP: SATURDAY MORNING";
+    } else if (tzDate.dayOfWeek === 5) {
+      // Friday of Holiday Week: Action Night (put bins out tonight)
+      isDisplayDay = true;
+      theme = {
+        headline: "BINS OUT TONIGHT!",
+        subtext: `Collection delayed 1 day for ${status.holidayName}. Roll bins to curb tonight!`,
+        badge: "⚠️ SCHEDULE ALERT"
+      };
+      bannerLabel = "SHIFTED PICKUP DAY";
+      bannerValue = "SATURDAY MORNING";
+    }
+  } else {
+    if (tzDate.dayOfWeek === 4) {
+      // Normal Thursday: Fun rotating themes
+      isDisplayDay = true;
+      const themeIndex = tzDate.hour % THEMES.length;
+      theme = THEMES[themeIndex];
+      bannerLabel = "PICKUP DAY";
+      bannerValue = status.pickupDayName;
+    }
+  }
+
+  const debugInfo = `${dayNames[tzDate.dayOfWeek]} ${tzDate.month}/${tzDate.day}/${tzDate.year} ${tzDate.hour}:00 ET | dow=${tzDate.dayOfWeek} | isHolidayWeek=${status.isHolidayWeek} (${status.holidayName || 'None'}) | isDisplayDay=${isDisplayDay}`;
+
+  if (!isDisplayDay) {
     return {
       isReminderTime: false,
       data: {
         is_reminder: "no",
         pickup_day: status.pickupDayName,
         reminder_day: status.reminderDayName,
-        is_holiday_week: "no",
-        holiday_name: "",
+        is_holiday_week: status.isHolidayWeek ? "yes" : "no",
+        holiday_name: status.holidayName || "",
         headline: "",
         subtext: "",
         badge: "",
+        banner_label: "",
+        banner_value: "",
         debug_info: debugInfo
       }
     };
-  }
-
-  // Pick theme — rotate based on hour so it changes on each TRMNL refresh
-  let theme;
-  if (status.isHolidayWeek) {
-    theme = {
-      headline: "HOLIDAY WEEK SHIFT!",
-      subtext: "Collection delayed 1 day. Put bins out tonight!",
-      badge: "⚠️ SCHEDULE ALERT"
-    };
-  } else {
-    const themeIndex = tzDate.hour % THEMES.length;
-    theme = THEMES[themeIndex];
   }
 
   return {
@@ -190,8 +215,11 @@ export function processRequest(tzDate) {
       headline: theme.headline,
       subtext: theme.subtext,
       badge: theme.badge,
+      banner_label: bannerLabel,
+      banner_value: bannerValue,
       debug_info: debugInfo
     }
   };
 }
+
 
