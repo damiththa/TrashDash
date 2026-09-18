@@ -145,15 +145,16 @@ export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  let isDisplayDay = false;
+  // Determine display mode: "reminder", "holiday_delay", "holiday_action", or "idle"
+  let mode = "idle";
   let theme = null;
-  let bannerLabel = "PICKUP DAY";
+  let bannerLabel = "NEXT PICKUP";
   let bannerValue = status.pickupDayName;
 
   if (status.isHolidayWeek) {
     if (tzDate.dayOfWeek === 4) {
-      // Thursday of Holiday Week: Delay Notice (heads-up)
-      isDisplayDay = true;
+      // Thursday of Holiday Week: Delay Notice
+      mode = "holiday_delay";
       theme = {
         headline: "NO TRASH TONIGHT!",
         subtext: `Collection delayed 1 day for ${status.holidayName}. Bins stay off the curb tonight!`,
@@ -162,8 +163,8 @@ export function processRequest(tzDate) {
       bannerLabel = "BINS GO OUT FRIDAY NIGHT";
       bannerValue = "PICKUP: SATURDAY MORNING";
     } else if (tzDate.dayOfWeek === 5) {
-      // Friday of Holiday Week: Action Night (put bins out tonight)
-      isDisplayDay = true;
+      // Friday of Holiday Week: Action Night
+      mode = "holiday_action";
       theme = {
         headline: "BINS OUT TONIGHT!",
         subtext: `Collection delayed 1 day for ${status.holidayName}. Roll bins to curb tonight!`,
@@ -175,7 +176,7 @@ export function processRequest(tzDate) {
   } else {
     if (tzDate.dayOfWeek === 4) {
       // Normal Thursday: Fun rotating themes
-      isDisplayDay = true;
+      mode = "reminder";
       const themeIndex = tzDate.hour % THEMES.length;
       theme = THEMES[themeIndex];
       bannerLabel = "PICKUP DAY";
@@ -183,31 +184,24 @@ export function processRequest(tzDate) {
     }
   }
 
-  const debugInfo = `${dayNames[tzDate.dayOfWeek]} ${tzDate.month}/${tzDate.day}/${tzDate.year} ${tzDate.hour}:00 ET | dow=${tzDate.dayOfWeek} | isHolidayWeek=${status.isHolidayWeek} (${status.holidayName || 'None'}) | isDisplayDay=${isDisplayDay}`;
-
-  if (!isDisplayDay) {
-    return {
-      isReminderTime: false,
-      data: {
-        is_reminder: "no",
-        pickup_day: status.pickupDayName,
-        reminder_day: status.reminderDayName,
-        is_holiday_week: status.isHolidayWeek ? "yes" : "no",
-        holiday_name: status.holidayName || "",
-        headline: "",
-        subtext: "",
-        badge: "",
-        banner_label: "",
-        banner_value: "",
-        debug_info: debugInfo
-      }
+  // Idle screen: shown on all non-reminder days
+  if (mode === "idle") {
+    theme = {
+      headline: "TRASHDASH",
+      subtext: `${status.reminderDayName} reminder • ${status.pickupDayName.charAt(0) + status.pickupDayName.slice(1).toLowerCase()} pickup`,
+      badge: "ALL CLEAR"
     };
+    bannerLabel = "NEXT PICKUP";
+    bannerValue = status.pickupDayName;
   }
 
+  const debugInfo = `${dayNames[tzDate.dayOfWeek]} ${tzDate.month}/${tzDate.day}/${tzDate.year} ${tzDate.hour}:00 ET | dow=${tzDate.dayOfWeek} | mode=${mode} | isHolidayWeek=${status.isHolidayWeek} (${status.holidayName || 'None'})`;
+
   return {
-    isReminderTime: true,
+    isReminderTime: mode !== "idle",
     data: {
       is_reminder: "yes",
+      display_mode: mode,
       pickup_day: status.pickupDayName,
       reminder_day: status.reminderDayName,
       is_holiday_week: status.isHolidayWeek ? "yes" : "no",
@@ -221,5 +215,3 @@ export function processRequest(tzDate) {
     }
   };
 }
-
-
