@@ -140,6 +140,41 @@ const THEMES = [
   }
 ];
 
+// --- Fun Rotating Idle Themes (non-reminder days) ---
+
+const IDLE_THEMES = [
+  {
+    headline: "BINS CAN CHILL",
+    subtext: "No action needed. Enjoy your day!",
+    badge: "OFF DUTY"
+  },
+  {
+    headline: "RACCOONS: 0  YOU: 1",
+    subtext: "Last pickup was a success. Standing by until Thursday.",
+    badge: "STANDBY MODE"
+  },
+  {
+    headline: "NOTHING TO HAUL",
+    subtext: "Your curb is clean. Your conscience is clear. See you Thursday.",
+    badge: "ZEN MODE"
+  },
+  {
+    headline: "MISSION ACCOMPLISHED",
+    subtext: "Trash: collected. Bins: stored. You: legend.",
+    badge: "DEBRIEFING"
+  },
+  {
+    headline: "THE CURB IS QUIET",
+    subtext: "No bins needed. The neighborhood sleeps.",
+    badge: "ALL CLEAR"
+  },
+  {
+    headline: "TRASH FREE ZONE",
+    subtext: "Nothing to see here. Move along, citizen.",
+    badge: "PATROL REPORT"
+  }
+];
+
 
 export function processRequest(tzDate) {
   const status = getWeekStatus(tzDate);
@@ -184,13 +219,10 @@ export function processRequest(tzDate) {
     }
   }
 
-  // Idle screen: shown on all non-reminder days
+  // Idle screen: shown on all non-reminder days (rotates hourly)
   if (mode === "idle") {
-    theme = {
-      headline: "TRASHDASH",
-      subtext: `${status.reminderDayName} reminder • ${status.pickupDayName.charAt(0) + status.pickupDayName.slice(1).toLowerCase()} pickup`,
-      badge: "ALL CLEAR"
-    };
+    const idleIndex = tzDate.hour % IDLE_THEMES.length;
+    theme = IDLE_THEMES[idleIndex];
     bannerLabel = "NEXT PICKUP";
     bannerValue = status.pickupDayName;
   }
