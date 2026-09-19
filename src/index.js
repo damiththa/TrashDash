@@ -1,47 +1,139 @@
 import { processRequest } from './trash_logic.js';
+import { syncTrashDashSchedule, getDevices, getDevicePlaylist } from './trmnl_sync.js';
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const testMode = url.searchParams.get('test');
+    const now = new Date();
+    const tzDate = getTzDateParts(now, 'America/New_York');
 
-    let tzDate;
+    // --- Manual / Diagnostic TRMNL Sync Endpoint ---
+    if (url.pathname === '/sync-schedule' || url.searchParams.has('sync')) {
+      if (!env.TRMNL_API_KEY) {
+        return new Response(JSON.stringify({
+          error: "TRMNL_API_KEY secret is not configured in Cloudflare environment."
+        }, null, 2), {
+          status: 400,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      }
+
+      const target = url.searchParams.get('target') || 'black'; // default: DEV / Black only
+      try {
+        const syncResult = await syncTrashDashSchedule(env.TRMNL_API_KEY, tzDate, { targetDevice: target });
+        return new Response(JSON.stringify(syncResult, null, 2), {
+          status: 200,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          error: err.message
+        }, null, 2), {
+          status: 500,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      }
+    }
+
+    // --- Diagnostic TRMNL Status Endpoint (read-only inspection) ---
+    if (url.pathname === '/trmnl-status') {
+      if (!env.TRMNL_API_KEY) {
+        return new Response(JSON.stringify({
+          configured: false,
+          message: "TRMNL_API_KEY secret not found in environment."
+        }, null, 2), {
+          status: 200,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      }
+
+      try {
+        const devices = await getDevices(env.TRMNL_API_KEY);
+        const deviceDetails = [];
+        for (const dev of devices) {
+          const items = await getDevicePlaylist(env.TRMNL_API_KEY, dev.id);
+          deviceDetails.push({
+            device_id: dev.id,
+            device_name: dev.name,
+            friendly_id: dev.friendly_id,
+            playlist_items: items.map(it => ({
+              id: it.id,
+              plugin_name: it.plugin?.name,
+              plugin_key: it.plugin?.keyname,
+              configuration_state: it.configuration_state
+            }))
+          });
+        }
+        return new Response(JSON.stringify({
+          configured: true,
+          devices: deviceDetails
+        }, null, 2), {
+          status: 200,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }, null, 2), {
+          status: 500,
+          headers: { "content-type": "application/json;charset=UTF-8" }
+        });
+      }
+    }
+
+    // --- Normal Polling / Screen Payload ---
+    let renderTzDate = tzDate;
 
     if (testMode === 'reminder') {
       // Simulate a normal Thursday at 3 PM for preview
-      tzDate = {
+      renderTzDate = {
         year: 2026, month: 8, day: 6,
         hour: 15, dayOfWeek: 4,
         jsDate: new Date(2026, 7, 6)
       };
     } else if (testMode === 'holiday_thu') {
       // Simulate Thanksgiving Thursday (Delay Notice) for preview
-      tzDate = {
+      renderTzDate = {
         year: 2026, month: 11, day: 26,
         hour: 15, dayOfWeek: 4,
         jsDate: new Date(2026, 10, 26)
       };
     } else if (testMode === 'holiday' || testMode === 'holiday_fri') {
       // Simulate Thanksgiving Friday (Action Night) for preview
-      tzDate = {
+      renderTzDate = {
         year: 2026, month: 11, day: 27,
         hour: 15, dayOfWeek: 5,
         jsDate: new Date(2026, 10, 27)
       };
-    } else {
-      const now = new Date();
-      tzDate = getTzDateParts(now, 'America/New_York');
     }
 
-    const result = processRequest(tzDate);
+    const result = processRequest(renderTzDate);
 
-    // Always return HTTP 200 OK with valid JSON for TRMNL polling health
     return new Response(JSON.stringify(result.data), {
       status: 200,
       headers: { "content-type": "application/json;charset=UTF-8" },
     });
   },
+
+  // --- Daily Cron Trigger Handler ---
+  async scheduled(event, env, ctx) {
+    if (!env.TRMNL_API_KEY) {
+      console.warn("Scheduled cron ran, but TRMNL_API_KEY is not configured.");
+      return;
+    }
+
+    const now = new Date();
+    const tzDate = getTzDateParts(now, 'America/New_York');
+
+    try {
+      // Default to 'black' DEV device initially; can be expanded to 'all' once approved
+      const syncResult = await syncTrashDashSchedule(env.TRMNL_API_KEY, tzDate, { targetDevice: 'black' });
+      console.log("Daily TRMNL Schedule Sync executed:", JSON.stringify(syncResult));
+    } catch (err) {
+      console.error("Daily TRMNL Schedule Sync failed:", err.message);
+    }
+  }
 };
+
 
 // --- Timezone Helper ---
 function getTzDateParts(dateObj, timeZone) {
