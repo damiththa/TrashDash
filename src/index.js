@@ -38,15 +38,18 @@ export default {
 
     // --- Diagnostic TRMNL Status Endpoint (read-only inspection) ---
     if (url.pathname === '/trmnl-status') {
+      const envKeys = Object.keys(env || {});
       if (!env.TRMNL_API_KEY) {
         return new Response(JSON.stringify({
           configured: false,
-          message: "TRMNL_API_KEY secret not found in environment."
+          message: "TRMNL_API_KEY secret not found in environment.",
+          env_keys: envKeys
         }, null, 2), {
           status: 200,
           headers: { "content-type": "application/json;charset=UTF-8" }
         });
       }
+
 
       try {
         const devices = await getDevices(env.TRMNL_API_KEY);
