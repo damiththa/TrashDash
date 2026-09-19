@@ -69,6 +69,24 @@ export async function updatePlaylistItemSchedule(apiKey, itemId, weekSchedules) 
 }
 
 /**
+ * List all plugin settings on the account
+ */
+export async function getPluginSettings(apiKey) {
+  const result = await trmnlRequest('/plugin_settings', apiKey);
+  return result.data || [];
+}
+
+/**
+ * Update playlist item properties (e.g. visible: true)
+ */
+export async function updatePlaylistItem(apiKey, itemId, params) {
+  return trmnlRequest(`/playlists/items/${itemId}`, apiKey, {
+    method: 'PATCH',
+    body: JSON.stringify(params)
+  });
+}
+
+/**
  * Full TRMNL Sync: Discovers devices and updates TrashDash schedule dynamically
  * @param {string} apiKey - TRMNL account API key
  * @param {object} tzDate - current timezone date object
@@ -90,10 +108,18 @@ export async function syncTrashDashSchedule(apiKey, tzDate, options = {}) {
     }
   ];
 
-  // 1. Fetch all devices
-  const devices = await getDevices(apiKey);
+  // 1. Fetch all plugin settings to find exact TrashDash IDs
+  const allSettings = await getPluginSettings(apiKey);
+  const trashSettingsMap = new Map();
+  for (const s of allSettings) {
+    const sName = (s.name || '').toLowerCase();
+    if (sName.includes('trash')) {
+      trashSettingsMap.set(s.id, s.name);
+    }
+  }
 
-  // 2. Filter devices based on target (e.g. 'black' only for DEV)
+  // 2. Fetch all devices and filter based on target
+  const devices = await getDevices(apiKey);
   const matchedDevices = devices.filter(dev => {
     const devName = (dev.name || '').toLowerCase();
     if (targetFilter === 'all') return true;
@@ -102,24 +128,29 @@ export async function syncTrashDashSchedule(apiKey, tzDate, options = {}) {
 
   const syncResults = [];
 
-  // 3. For each matched device, find TrashDash and update its schedule
+  // 3. For each matched device, find TrashDash playlist items and update schedule
   for (const device of matchedDevices) {
     const playlistItems = await getDevicePlaylist(apiKey, device.id);
 
-    // Find TrashDash item: matches name or keyname containing 'trash'
     const trashItems = playlistItems.filter(item => {
-      const pluginName = (item.plugin?.name || '').toLowerCase();
-      const pluginKey = (item.plugin?.keyname || '').toLowerCase();
-      return pluginName.includes('trash') || pluginKey.includes('trash');
+      return item.plugin_setting_id && trashSettingsMap.has(item.plugin_setting_id);
     });
 
     for (const item of trashItems) {
-      const updateRes = await updatePlaylistItemSchedule(apiKey, item.id, desiredSchedule);
+      // Ensure the playlist item is marked visible
+      if (!item.visible) {
+        await updatePlaylistItem(apiKey, item.id, { visible: true });
+      }
+
+      // Update the schedule
+      await updatePlaylistItemSchedule(apiKey, item.id, desiredSchedule);
+
       syncResults.push({
         device_id: device.id,
         device_name: device.name,
         playlist_item_id: item.id,
-        plugin_name: item.plugin?.name || 'TrashDash',
+        plugin_setting_id: item.plugin_setting_id,
+        plugin_name: trashSettingsMap.get(item.plugin_setting_id) || 'TrashDash',
         applied_schedule: desiredSchedule,
         is_holiday_week: status.isHolidayWeek,
         holiday_name: status.holidayName || null,
@@ -138,3 +169,4 @@ export async function syncTrashDashSchedule(apiKey, tzDate, options = {}) {
     updated_items: syncResults
   };
 }
+

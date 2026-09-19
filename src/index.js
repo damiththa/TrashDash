@@ -8,9 +8,11 @@ export default {
     const now = new Date();
     const tzDate = getTzDateParts(now, 'America/New_York');
 
+    const apiKey = env.TRMNL_API_KEY || url.searchParams.get('key') || request.headers.get('x-trmnl-key');
+
     // --- Manual / Diagnostic TRMNL Sync Endpoint ---
     if (url.pathname === '/sync-schedule' || url.searchParams.has('sync')) {
-      if (!env.TRMNL_API_KEY) {
+      if (!apiKey) {
         return new Response(JSON.stringify({
           error: "TRMNL_API_KEY secret is not configured in Cloudflare environment."
         }, null, 2), {
@@ -21,7 +23,7 @@ export default {
 
       const target = url.searchParams.get('target') || 'black'; // default: DEV / Black only
       try {
-        const syncResult = await syncTrashDashSchedule(env.TRMNL_API_KEY, tzDate, { targetDevice: target });
+        const syncResult = await syncTrashDashSchedule(apiKey, tzDate, { targetDevice: target });
         return new Response(JSON.stringify(syncResult, null, 2), {
           status: 200,
           headers: { "content-type": "application/json;charset=UTF-8" }
@@ -39,7 +41,7 @@ export default {
     // --- Diagnostic TRMNL Status Endpoint (read-only inspection) ---
     if (url.pathname === '/trmnl-status') {
       const envKeys = Object.keys(env || {});
-      if (!env.TRMNL_API_KEY) {
+      if (!apiKey) {
         return new Response(JSON.stringify({
           configured: false,
           message: "TRMNL_API_KEY secret not found in environment.",
@@ -50,26 +52,28 @@ export default {
         });
       }
 
-
       try {
-        const devices = await getDevices(env.TRMNL_API_KEY);
+        const devices = await getDevices(apiKey);
         const deviceDetails = [];
         for (const dev of devices) {
-          const items = await getDevicePlaylist(env.TRMNL_API_KEY, dev.id);
+          const items = await getDevicePlaylist(apiKey, dev.id);
           deviceDetails.push({
             device_id: dev.id,
             device_name: dev.name,
             friendly_id: dev.friendly_id,
             playlist_items: items.map(it => ({
               id: it.id,
+              plugin_setting_id: it.plugin_setting_id,
               plugin_name: it.plugin?.name,
               plugin_key: it.plugin?.keyname,
-              configuration_state: it.configuration_state
+              configuration_state: it.configuration_state,
+              visible: it.visible
             }))
           });
         }
         return new Response(JSON.stringify({
           configured: true,
+          env_configured: !!env.TRMNL_API_KEY,
           devices: deviceDetails
         }, null, 2), {
           status: 200,
